@@ -86,6 +86,7 @@ pure_eval==0.2.3
 pycparser==3.0
 pydantic==2.13.0
 pydantic_core==2.46.0
+pywin32>=223
 Pygments==2.19.2
 pyjsparser==2.7.1
 pymongo==4.15.5
