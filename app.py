@@ -1,6 +1,4 @@
 
-
-
 # from flask import Flask, request, jsonify
 # from flask_cors import CORS
 # from ollama import Client
@@ -10,6 +8,11 @@
 
 # # CONNECT OLLAMA
 # ollama_client = Client(host="http://localhost:11434")
+
+# # =========================================
+# # CONVERSATION MEMORY
+# # =========================================
+# conversation_history = []
 
 # SYSTEM_PROMPT = """
 # You are Mitra AI Assistant.
@@ -88,12 +91,11 @@
 # Do not add unnecessary explanations.
 # """
 
-
 # # ---------------- HOME ----------------
 # @app.route("/", methods=["GET"])
 # def home():
 #     return jsonify({
-#         "message": "AI Server Running 🚀"
+#         "message": "AI Server Running"
 #     })
 
 # # ---------------- CHAT ----------------
@@ -101,34 +103,65 @@
 # def chat():
 
 #     try:
+
+#         global conversation_history
+
 #         data = request.get_json()
 
 #         user_message = data.get("message", "")
 
+#         # SAVE USER MESSAGE
+#         conversation_history.append({
+#             "role": "user",
+#             "content": user_message
+#         })
+
+#         # LIMIT MEMORY
+#         if len(conversation_history) > 20:
+#             conversation_history = conversation_history[-20:]
+
+#         # FULL CHAT HISTORY
+#         messages = [
+#             {
+#                 "role": "system",
+#                 "content": SYSTEM_PROMPT
+#             }
+#         ] + conversation_history
+
 #         response = ollama_client.chat(
 #             model="llama3",
-#             messages=[
-#                 {
-#                     "role": "system",
-#                     "content": SYSTEM_PROMPT
-#                 },
-#                 {
-#                     "role": "user",
-#                     "content": user_message
-#                 }
-#             ]
+#             messages=messages
 #         )
 
 #         ai_reply = response["message"]["content"]
+
+#         # SAVE AI RESPONSE
+#         conversation_history.append({
+#             "role": "assistant",
+#             "content": ai_reply
+#         })
 
 #         return jsonify({
 #             "reply": ai_reply
 #         })
 
 #     except Exception as e:
+
 #         return jsonify({
 #             "error": str(e)
 #         })
+
+# # ---------------- CLEAR MEMORY ----------------
+# @app.route("/clear", methods=["POST"])
+# def clear_memory():
+
+#     global conversation_history
+
+#     conversation_history = []
+
+#     return jsonify({
+#         "message": "Conversation history cleared"
+#     })
 
 # # ---------------- RUN ----------------
 # if __name__ == "__main__":
@@ -143,11 +176,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ollama import Client
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+# =========================================
 # CONNECT OLLAMA
+# =========================================
 ollama_client = Client(host="http://localhost:11434")
 
 # =========================================
@@ -155,6 +191,9 @@ ollama_client = Client(host="http://localhost:11434")
 # =========================================
 conversation_history = []
 
+# =========================================
+# SYSTEM PROMPT
+# =========================================
 SYSTEM_PROMPT = """
 You are Mitra AI Assistant.
 
@@ -232,14 +271,18 @@ Keep formatting clean and readable.
 Do not add unnecessary explanations.
 """
 
-# ---------------- HOME ----------------
+# =========================================
+# HOME ROUTE
+# =========================================
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
-        "message": "AI Server Running"
+        "message": "AI Server Running 🚀"
     })
 
-# ---------------- CHAT ----------------
+# =========================================
+# CHAT ROUTE
+# =========================================
 @app.route("/chat", methods=["POST"])
 def chat():
 
@@ -269,6 +312,7 @@ def chat():
             }
         ] + conversation_history
 
+        # OLLAMA RESPONSE
         response = ollama_client.chat(
             model="llama3",
             messages=messages
@@ -292,7 +336,9 @@ def chat():
             "error": str(e)
         })
 
-# ---------------- CLEAR MEMORY ----------------
+# =========================================
+# CLEAR MEMORY ROUTE
+# =========================================
 @app.route("/clear", methods=["POST"])
 def clear_memory():
 
@@ -304,11 +350,13 @@ def clear_memory():
         "message": "Conversation history cleared"
     })
 
-# ---------------- RUN ----------------
+# =========================================
+# RUN FLASK SERVER
+# =========================================
 if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        port=8000,
+        port=int(os.environ.get("PORT", 8000)),
         debug=False
     )
